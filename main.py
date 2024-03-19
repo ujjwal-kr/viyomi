@@ -14,14 +14,20 @@ speaker.setProperty('voice', voices[1].id)
 speaker.say("Hello world, I am Vyomee")
 speaker.runAndWait()
 
-
 config = dotenv_values(".env")
+
 print(config)
 
 r = sr.Recognizer()
 mic  = sr.Microphone()
 genai.configure(api_key=config["GEMINI_KEY"])
 model = genai.GenerativeModel('gemini-pro')
+chat = model.start_chat(history=[])
+
+with open("prompt.txt") as f:
+    prompt = f.read()
+
+chat.send_message(prompt)
 
 while True:
     print("Listening...")
@@ -33,13 +39,15 @@ while True:
     try:
         data = r.recognize_wit(audio, config["WIT_KEY"])
         print("User said:", data)
-        response = model.generate_content(data)
+        response = chat.send_message(data)
         text_response = response.candidates[0].content.parts[0].text
         print(text_response)
         speaker.say(text_response)
         speaker.runAndWait()
         
     except sr.UnknownValueError:
-        print("Sorry, could not understand audio.")
+        speaker.say("Sorry, could not understand. Please repeat.")
+        speaker.runAndWait()
     except sr.RequestError as e:
-        print("Error processing the request; {0}".format(e))
+        speaker.say("Critical error occured")
+        speaker.runAndWait()
