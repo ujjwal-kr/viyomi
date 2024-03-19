@@ -1,5 +1,6 @@
 import pyttsx3
 import speech_recognition as sr
+import google.generativeai as genai
 from dotenv import dotenv_values
 
 config = dotenv_values(".env")
@@ -19,6 +20,8 @@ print(config)
 
 r = sr.Recognizer()
 mic  = sr.Microphone()
+genai.configure(api_key=config["GEMINI_KEY"])
+model = genai.GenerativeModel('gemini-pro')
 
 while True:
     print("Listening...")
@@ -30,7 +33,11 @@ while True:
     try:
         data = r.recognize_wit(audio, config["WIT_KEY"])
         print("User said:", data)
-        # Add your processing logic here
+        response = model.generate_content(data)
+        text_response = response.candidates[0].content.parts[0].text
+        print(text_response)
+        speaker.say(text_response)
+        speaker.runAndWait()
         
     except sr.UnknownValueError:
         print("Sorry, could not understand audio.")
