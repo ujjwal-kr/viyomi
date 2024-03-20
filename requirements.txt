@@ -6,3 +6,4 @@ Microphone
 setuptools
 python-dotenv
 google-generativeai
+flask
