@@ -13,6 +13,7 @@ microphone = sr.Microphone()
 speaker = pyttsx3.init()
 voices = speaker.getProperty('voices')
 speaker.setProperty('voice', voices[1].id)
+speaker.setProperty('rate', 160)
 speaker.say("Hello world, I am Vyomee")
 speaker.runAndWait()
 
@@ -37,10 +38,10 @@ if __name__ == "__main__":
     flask_thread = threading.Thread(target=start_flask_server)
     flask_thread.start()
 
-    with open("prompt.txt") as f:
-        prompt = f.read()
+with open("prompt.txt") as f:
+    prompt = f.read()
 
-    chat.send_message(prompt)
+chat.send_message(prompt)
 
 while True:
     print("Listening...")
@@ -54,13 +55,16 @@ while True:
     try:
         data = r.recognize_wit(audio, config["WIT_KEY"])
         print("User said:", data)
-        response = chat.send_message(data)
-        text_response = response.candidates[0].content.parts[0].text
-        print(text_response)
-        status = "speaking"
-        speaker.say(text_response)
-        speaker.runAndWait()
-        
+        try:
+            response = chat.send_message(data)
+            text_response = response.candidates[0].content.parts[0].text
+            print(text_response)
+            status = "speaking"
+            speaker.say(text_response)
+            speaker.runAndWait()
+        except:
+            speaker.say("I cannot process this request due to some rules.")
+            speaker.runAndWait()
     except sr.UnknownValueError:
         speaker.say("Sorry, could not understand. Please repeat.")
         speaker.runAndWait()
