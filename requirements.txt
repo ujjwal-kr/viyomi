@@ -7,3 +7,4 @@ setuptools
 python-dotenv
 google-generativeai
 flask
+flask-cors

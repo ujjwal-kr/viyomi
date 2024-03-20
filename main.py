@@ -3,6 +3,7 @@ import speech_recognition as sr
 import google.generativeai as genai
 from dotenv import dotenv_values
 from flask import Flask, jsonify
+from flask_cors import CORS
 import threading
 
 config = dotenv_values(".env")
@@ -23,6 +24,7 @@ chat = model.start_chat(history=[])
 
 status = ""
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/status")
 def get_status():
