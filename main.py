@@ -34,12 +34,12 @@ def ping_endpoint():
 def chat_endpoint():
     data = request.get_json()
     pin = data['pin']
-    if pin is "00000":
+    if pin == "00000":
         response = chat.send_message(data["message"])
         speaker.say(response.candidates[0].content.parts[0].text)
         speaker.runAndWait()
         return jsonify({"message": 'done'})
-    return jsonify({"message": "Invalid PIN"})
+    return jsonify({"message": "done"})
 
 def start_flask_server():
     app.run()
