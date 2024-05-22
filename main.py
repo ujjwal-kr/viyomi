@@ -1,14 +1,15 @@
 import pyttsx3
-
 import google.generativeai as genai
 from dotenv import dotenv_values
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import threading
-from flask import request
+import signal
+import sys
 
 config = dotenv_values(".env")
 
+# Initialize text-to-speech engine
 speaker = pyttsx3.init()
 voices = speaker.getProperty('voices')
 speaker.setProperty('voice', voices[1].id)
@@ -16,24 +17,18 @@ speaker.setProperty('rate', 160)
 speaker.say("Hello world, I am Vyomee")
 speaker.runAndWait()
 
+# Configure generative AI model
 genai.configure(api_key=config["GEMINI_KEY"])
 model = genai.GenerativeModel('gemini-pro')
 chat = model.start_chat(history=[])
 
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-def start_flask_server():
-    app.run()
-
-if __name__ == "__main__":
-    flask_thread = threading.Thread(target=start_flask_server)
-    flask_thread.start()
-
-with open("prompt.txt") as f:
-    prompt = f.read()
-
-chat.send_message(prompt)
+@app.route("/ping", methods=["GET"])
+def ping_endpoint():
+    return jsonify({"message": "pong"})
 
 @app.route("/chat", methods=["POST"])
 def chat_endpoint():
@@ -42,3 +37,32 @@ def chat_endpoint():
     speaker.say(response.candidates[0].content.parts[0].text)
     speaker.runAndWait()
     return jsonify({"message": 'done'})
+
+def start_flask_server():
+    app.run()
+
+# Signal handler for graceful shutdown
+def signal_handler(sig, frame):
+    print('Shutting down...')
+    shutdown_event.set()
+    sys.exit(0)
+
+if __name__ == "__main__":
+    # Create an event to keep the main thread alive
+    shutdown_event = threading.Event()
+
+    # Register signal handler
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # Start Flask server in a separate thread
+    flask_thread = threading.Thread(target=start_flask_server)
+    flask_thread.start()
+
+    with open("prompt.txt") as f:
+        prompt = f.read()
+
+    chat.send_message(prompt)
+    print("Initial prompt sent")
+
+    # Wait for the shutdown signal
+    shutdown_event.wait()
