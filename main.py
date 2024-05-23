@@ -38,7 +38,7 @@ def ping_endpoint():
 def chat_endpoint():
     data = request.get_json()
     pin = data['pin']
-    if pin == "00000":
+    if pin == config["PASSKEY"]:
         response = chat.send_message(data["message"])
         speaker.say(response.candidates[0].content.parts[0].text)
         speaker.runAndWait()
