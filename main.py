@@ -10,6 +10,9 @@ import subprocess
 
 config = dotenv_values(".env")
 
+lock = 0
+i = 0
+
 subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "\"Helo world, I am Veeyomee\""])
 subprocess.Popen(["ssh", "-R", "viyomi-proxy.serveo.net:80:localhost:5000", "serveo.net", "&"])
 
@@ -22,18 +25,34 @@ chat = model.start_chat(history=[])
 app = Flask(__name__)
 CORS(app)
 
+def init_prompt():
+    with open("prompt.txt") as f:
+        prompt = f.read()
+
+    chat.send_message(prompt)
+    print("Initial prompt sent")
 @app.route("/ping", methods=["GET"])
 def ping_endpoint():
     return jsonify({"message": "pong"})
 
 @app.route("/chat", methods=["POST"])
 def chat_endpoint():
+    global lock
+    global i
     data = request.get_json()
     pin = data['pin']
     if pin == config["PASSKEY"]:
+        if lock == 1:
+            return jsonify({"message": "bruh"})
+        lock = 1
         response = chat.send_message(data["message"])
+        i = i + 1
+        if i % 5 == 0:
+            init_prompt()
+        print(i)
         r = response.candidates[0].content.parts[0].text.replace("*", "")
         subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
+        lock = 0
         return jsonify({"message": 'done'})
     return jsonify({"message": "done"})
 
@@ -57,11 +76,7 @@ if __name__ == "__main__":
     flask_thread = threading.Thread(target=start_flask_server)
     flask_thread.start()
 
-    with open("prompt.txt") as f:
-        prompt = f.read()
-
-    chat.send_message(prompt)
-    print("Initial prompt sent")
+    init_prompt()
 
     # Wait for the shutdown signal
     shutdown_event.wait()
