@@ -16,7 +16,7 @@ speaker = pyttsx3.init()
 voices = speaker.getProperty('voices')
 speaker.setProperty('rate', 160)
 speaker.setProperty('voice', 'english_rp+f2')
-speaker.say("Hello world, I am Vyomee")
+speaker.say("Hello world, I am Veeyomee")
 speaker.runAndWait()
 
 subprocess.Popen(["ssh", "-R", "viyomi-proxy.serveo.net:80:localhost:5000", "serveo.net", "&"])
