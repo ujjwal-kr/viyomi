@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import pyttsx3
 import google.generativeai as genai
 from dotenv import dotenv_values
@@ -6,16 +7,19 @@ from flask_cors import CORS
 import threading
 import signal
 import sys
+import subprocess
 
 config = dotenv_values(".env")
 
 # Initialize text-to-speech engine
 speaker = pyttsx3.init()
 voices = speaker.getProperty('voices')
-speaker.setProperty('voice', voices[1].id)
 speaker.setProperty('rate', 160)
+speaker.setProperty('voice', 'english_rp+f2')
 speaker.say("Hello world, I am Vyomee")
 speaker.runAndWait()
+
+subprocess.Popen(["ssh", "-R", "viyomi-proxy.serveo.net:80:localhost:5000", "serveo.net", "&"])
 
 # Configure generative AI model
 genai.configure(api_key=config["GEMINI_KEY"])

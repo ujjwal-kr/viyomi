@@ -1,8 +1,6 @@
 pyttsx3
-SpeechRecognition
 requests
 pyAudio
-Microphone
 setuptools
 python-dotenv
 google-generativeai
