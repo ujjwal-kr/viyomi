@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import pyttsx3
 import google.generativeai as genai
 from dotenv import dotenv_values
 from flask import Flask, jsonify, request
@@ -11,14 +10,7 @@ import subprocess
 
 config = dotenv_values(".env")
 
-# Initialize text-to-speech engine
-speaker = pyttsx3.init()
-voices = speaker.getProperty('voices')
-speaker.setProperty('rate', 160)
-speaker.setProperty('voice', 'english_rp+f2')
-speaker.say("Hello world, I am Veeyomee")
-speaker.runAndWait()
-
+subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "\"Helo world, I am Veeyomee\""])
 subprocess.Popen(["ssh", "-R", "viyomi-proxy.serveo.net:80:localhost:5000", "serveo.net", "&"])
 
 # Configure generative AI model
@@ -40,8 +32,8 @@ def chat_endpoint():
     pin = data['pin']
     if pin == config["PASSKEY"]:
         response = chat.send_message(data["message"])
-        speaker.say(response.candidates[0].content.parts[0].text)
-        speaker.runAndWait()
+        r = response.candidates[0].content.parts[0].text.replace("*", "")
+        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
         return jsonify({"message": 'done'})
     return jsonify({"message": "done"})
 
