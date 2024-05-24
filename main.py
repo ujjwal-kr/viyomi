@@ -22,6 +22,17 @@ def has_internet_connection():
     except subprocess.CalledProcessError:
         return False
 
+def add_spaces_between_uppercase(string):
+    words = string.split()
+    new_words = []
+    for word in words:
+        if word.isupper():
+            new_words.append(' '.join(word))
+        else:
+            new_words.append(word)
+    return ' '.join(new_words)
+
+
 # Wait until an internet connection is available
 while not has_internet_connection():
     print("Waiting for internet connection...")
@@ -66,7 +77,8 @@ def chat_endpoint():
             init_prompt()
         print(i)
         r = response.candidates[0].content.parts[0].text.replace("*", "")
-        r.replace("\n", "\n.")
+        r.replace("\n", "\n .")
+        r = add_spaces_between_uppercase(r)
         print(r)
         subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
         lock = 0
@@ -97,3 +109,4 @@ if __name__ == "__main__":
 
     # Wait for the shutdown signal
     shutdown_event.wait()
+
