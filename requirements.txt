@@ -1,10 +1,6 @@
-pyttsx3
 requests
-pyAudio
 setuptools
 python-dotenv
 google-generativeai
 flask
 flask-cors
-gtts
-playsound
