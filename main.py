@@ -7,13 +7,27 @@ import threading
 import signal
 import sys
 import subprocess
+import time
+import os
 
 config = dotenv_values(".env")
 
 lock = 0
 i = 0
 
-subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "\"Helo world, I am Veeyomee\""])
+def has_internet_connection():
+    try:
+        subprocess.check_call(["ping", "-c", "1", "8.8.8.8"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+# Wait until an internet connection is available
+while not has_internet_connection():
+    print("Waiting for internet connection...")
+    time.sleep(5)
+
+subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "\"Hello world, I am Veeyomee\""])
 subprocess.Popen(["ssh", "-R", "viyomi-proxy.serveo.net:80:localhost:5000", "serveo.net", "&"])
 
 # Configure generative AI model
@@ -31,6 +45,7 @@ def init_prompt():
 
     chat.send_message(prompt)
     print("Initial prompt sent")
+
 @app.route("/ping", methods=["GET"])
 def ping_endpoint():
     return jsonify({"message": "pong"})
