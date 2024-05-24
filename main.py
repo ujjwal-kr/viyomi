@@ -66,6 +66,8 @@ def chat_endpoint():
             init_prompt()
         print(i)
         r = response.candidates[0].content.parts[0].text.replace("*", "")
+        r.replace("\n", "\n.")
+        print(r)
         subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
         lock = 0
         return jsonify({"message": 'done'})
