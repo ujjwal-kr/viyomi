@@ -22,12 +22,13 @@ def has_internet_connection():
     except subprocess.CalledProcessError:
         return False
 
-def add_spaces_between_uppercase(string):
-    words = string.split()
+def add_spaces_between_uppercase(text):
+    words = text.split()
     new_words = []
     for word in words:
         if word.isupper():
-            new_words.append(' '.join(word))
+            spaced_word = ' '.join(word)
+            new_words.append(spaced_word)
         else:
             new_words.append(word)
     return ' '.join(new_words)
