@@ -94,6 +94,31 @@ def signal_handler(sig, frame):
     shutdown_event.set()
     sys.exit(0)
 
+def listen_to_mic():
+    global i
+    while True:
+        print("Listening...")
+        with mic as source:
+            r.adjust_for_ambient_noise(source)
+            audio = r.listen(source)
+
+        print("Processing now...")
+        try:
+            data = r.recognize_wit(audio, config["WIT_KEY"])
+            print("User said:", data)
+            i = i + 1
+            if i % 5 == 0:
+                print(i, "Sending init prompt")
+                init_prompt()
+            response = chat.send_message(data)
+            text_response = response.candidates[0].content.parts[0].text
+            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", text_response])
+            
+        except sr.UnknownValueError:
+            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not understand"])
+        except sr.RequestError as e:
+            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not connect"])
+
 if __name__ == "__main__":
     # Create an event to keep the main thread alive
     shutdown_event = threading.Event()
@@ -106,27 +131,8 @@ if __name__ == "__main__":
     flask_thread.start()
 
     init_prompt()
+    listen_to_mic()
 
     # Wait for the shutdown signal
     shutdown_event.wait()
 
-while True:
-    print("Listening...")
-    with mic as source:
-        r.adjust_for_ambient_noise(source)
-        audio = r.listen(source)
-
-    print("Processing now...")
-    try:
-        data = r.recognize_wit(audio, config["WIT_KEY"])
-        print("User said:", data)
-        if i % 5 == 0:
-            init_prompt()
-        response = chat.send_message(data)
-        text_response = response.candidates[0].content.parts[0].text
-        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", text_response])
-        
-    except sr.UnknownValueError:
-        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not understand"])
-    except sr.RequestError as e:
-        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not connect"])
