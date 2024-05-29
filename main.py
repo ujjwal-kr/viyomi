@@ -8,7 +8,10 @@ import signal
 import sys
 import subprocess
 import time
-import os
+import speech_recognition as sr
+
+r = sr.Recognizer()
+mic  = sr.Microphone()
 
 config = dotenv_values(".env")
 
@@ -107,3 +110,23 @@ if __name__ == "__main__":
     # Wait for the shutdown signal
     shutdown_event.wait()
 
+while True:
+    print("Listening...")
+    with mic as source:
+        r.adjust_for_ambient_noise(source)
+        audio = r.listen(source)
+
+    print("Processing now...")
+    try:
+        data = r.recognize_wit(audio, config["WIT_KEY"])
+        print("User said:", data)
+        if i % 5 == 0:
+            init_prompt()
+        response = chat.send_message(data)
+        text_response = response.candidates[0].content.parts[0].text
+        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", text_response])
+        
+    except sr.UnknownValueError:
+        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not understand"])
+    except sr.RequestError as e:
+        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not connect"])
