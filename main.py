@@ -69,7 +69,8 @@ def chat_endpoint():
     if pin == config["PASSKEY"]:
         response = chat.send_message(data["message"])
         print("Response aquired")
-        len = len(response.candidates)
+        length = len(response.candidates)
+        print(length)
         i = i + 1
         if i % 5 == 0:
             init_prompt()
