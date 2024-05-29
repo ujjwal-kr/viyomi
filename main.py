@@ -12,7 +12,6 @@ import os
 
 config = dotenv_values(".env")
 
-lock = 0
 i = 0
 
 def has_internet_connection():
@@ -64,15 +63,13 @@ def ping_endpoint():
 
 @app.route("/chat", methods=["POST"])
 def chat_endpoint():
-    global lock
     global i
     data = request.get_json()
     pin = data['pin']
     if pin == config["PASSKEY"]:
-        if lock == 1:
-            return jsonify({"message": "bruh"})
-        lock = 1
         response = chat.send_message(data["message"])
+        print("Response aquired")
+        len = len(response.candidates)
         i = i + 1
         if i % 5 == 0:
             init_prompt()
@@ -81,7 +78,6 @@ def chat_endpoint():
         r.replace("\n", "\n .")
         r = add_spaces_between_uppercase(r)
         subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
-        lock = 0
         return jsonify({"message": 'done'})
     return jsonify({"message": "done"})
 
