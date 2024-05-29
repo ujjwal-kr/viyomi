@@ -16,6 +16,8 @@ mic  = sr.Microphone()
 config = dotenv_values(".env")
 
 i = 0
+lock = 0
+mic_state = 0
 
 def has_internet_connection():
     try:
@@ -34,6 +36,41 @@ def add_spaces_between_uppercase(text):
         else:
             new_words.append(word)
     return ' '.join(new_words)
+
+def listen_to_mic():
+    global i
+    global lock
+    global mic_state
+    while True:
+        if mic_state == 1:
+            print("Listening...")
+            with mic as source:
+                r.adjust_for_ambient_noise(source)
+                audio = r.listen(source)
+            print("Processing now...")
+            try:
+                data = r.recognize_wit(audio, config["WIT_KEY"])
+                print("User said:", data)
+                i = i + 1
+                if i % 5 == 0:
+                    print(i, "Sending init prompt")
+                    init_prompt()
+                if lock == 0:
+                    lock = 1
+                    response = chat.send_message(data)
+                    text_response = response.candidates[0].content.parts[0].text
+                    subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", text_response])
+                    lock = 0
+                else:
+                    print("locked for voice")
+                
+            except sr.UnknownValueError:
+                subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not understand"])
+            except sr.RequestError as e:
+                subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not connect"])
+        else:
+            time.sleep(2)
+            continue
 
 
 # Wait until an internet connection is available
@@ -67,23 +104,49 @@ def ping_endpoint():
 @app.route("/chat", methods=["POST"])
 def chat_endpoint():
     global i
+    global lock
     data = request.get_json()
     pin = data['pin']
     if pin == config["PASSKEY"]:
-        response = chat.send_message(data["message"])
-        print("Response aquired")
-        length = len(response.candidates)
-        print(length)
-        i = i + 1
-        if i % 5 == 0:
-            init_prompt()
-        print(i)
-        r = response.candidates[0].content.parts[0].text.replace("*", "")
-        r.replace("\n", "\n .")
-        r = add_spaces_between_uppercase(r)
-        subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
-        return jsonify({"message": 'done'})
+        if lock == 0:
+            lock = 1
+            response = chat.send_message(data["message"])
+            print("Response aquired")
+            length = len(response.candidates)
+            print(length)
+            i = i + 1
+            if i % 5 == 0:
+                init_prompt()
+            print(i)
+            r = response.candidates[0].content.parts[0].text.replace("*", "")
+            r.replace("\n", "\n .")
+            r = add_spaces_between_uppercase(r)
+            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
+            lock = 0
+            return jsonify({"message": 'done'})
+        else:
+            print("locked for chat")
+            return jsonify({"message": "locked"})
     return jsonify({"message": "done"})
+
+@app.route("/mic", methods=["POST"])
+def control_mic():
+    global mic_state
+    data = request.get_json()
+    pin = data['pin']
+    state = data['state']
+    if pin == config["PASSKEY"]:
+        if state == "ON":
+            mic_state = 1
+            print("mic on")
+            return jsonify({"message": "done"})
+        elif state == "OFF":
+            mic_state = 0
+            print("mic off")
+            return jsonify({"message": "done"})
+    else:
+        return jsonify({"message": "done"})
+    
 
 def start_flask_server():
     app.run()
@@ -94,30 +157,6 @@ def signal_handler(sig, frame):
     shutdown_event.set()
     sys.exit(0)
 
-def listen_to_mic():
-    global i
-    while True:
-        print("Listening...")
-        with mic as source:
-            r.adjust_for_ambient_noise(source)
-            audio = r.listen(source)
-
-        print("Processing now...")
-        try:
-            data = r.recognize_wit(audio, config["WIT_KEY"])
-            print("User said:", data)
-            i = i + 1
-            if i % 5 == 0:
-                print(i, "Sending init prompt")
-                init_prompt()
-            response = chat.send_message(data)
-            text_response = response.candidates[0].content.parts[0].text
-            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", text_response])
-            
-        except sr.UnknownValueError:
-            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not understand"])
-        except sr.RequestError as e:
-            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Could not connect"])
 
 if __name__ == "__main__":
     # Create an event to keep the main thread alive
@@ -135,4 +174,3 @@ if __name__ == "__main__":
 
     # Wait for the shutdown signal
     shutdown_event.wait()
-
