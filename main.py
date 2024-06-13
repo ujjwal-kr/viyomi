@@ -44,6 +44,7 @@ def listen_to_mic():
     while True:
         if mic_state == 1:
             print("Listening...")
+            subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", "Listening"])
             with mic as source:
                 r.adjust_for_ambient_noise(source)
                 audio = r.listen(source)
@@ -59,6 +60,8 @@ def listen_to_mic():
                     lock = 1
                     response = chat.send_message(data)
                     text_response = response.candidates[0].content.parts[0].text
+                    text_response = text_response.replace("*", "")
+                    print(text_response)
                     subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", text_response])
                     lock = 0
                 else:
@@ -120,6 +123,7 @@ def chat_endpoint():
             print(i)
             r = response.candidates[0].content.parts[0].text.replace("*", "")
             r.replace("\n", "\n .")
+            print(r)
             r = add_spaces_between_uppercase(r)
             subprocess.run(["flite", "-voice", "cmu_us_slt.flitevox", "-t", r])
             lock = 0
